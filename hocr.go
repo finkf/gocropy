@@ -13,50 +13,50 @@ import (
 	"strconv"
 )
 
-type HocrTitle struct {
+type HOCRTitle struct {
 	Title string `xml:"title,attr"`
 }
 
-type HocrClass struct {
+type HOCRClass struct {
 	Class string `xml:"class,attr"`
 }
 
-type HocrSpan struct {
-	HocrClass
-	HocrTitle
+type HOCRSpan struct {
+	HOCRClass
+	HOCRTitle
 	Data  string     `xml:",chardata"`
-	Token []HocrSpan `xml:"span"`
+	Token []HOCRSpan `xml:"span"`
 }
 
-type HocrDiv struct {
-	HocrClass
-	HocrTitle
-	Spans []HocrSpan `xml:"span"`
+type HOCRDiv struct {
+	HOCRClass
+	HOCRTitle
+	Spans []HOCRSpan `xml:"span"`
 }
 
-type HocrBody struct {
-	Div HocrDiv `xml:"div"`
+type HOCRBody struct {
+	Div HOCRDiv `xml:"div"`
 }
 
-type HocrMeta struct {
+type HOCRMeta struct {
 	HttpEquiv string `xml:"http-equiv,attr,omitempty"`
 	Name      string `xml:"name,attr,omitempty"`
 	Content   string `xml:"content,attr"`
 }
 
-type HocrHead struct {
+type HOCRHead struct {
 	Title string     `xml:"title"`
-	Metas []HocrMeta `xml:"meta"`
+	Metas []HOCRMeta `xml:"meta"`
 }
 
-type Hocr struct {
+type HOCR struct {
 	XMLName xml.Name
-	Head    HocrHead `xml:"head"`
-	Body    HocrBody `xml:"body"`
+	Head    HOCRHead `xml:"head"`
+	Body    HOCRBody `xml:"body"`
 	File    string
 }
 
-func (hocr *Hocr) ReadImageFileBbox() (*Bbox, error) {
+func (hocr *HOCR) ReadImageFileBbox() (*Bbox, error) {
 	basedir, _ := path.Split(hocr.File)
 	file := hocr.Body.Div.GetFile()
 	in, err := os.Open(path.Join(basedir, file))
@@ -78,7 +78,7 @@ func (hocr *Hocr) ReadImageFileBbox() (*Bbox, error) {
 
 var fileRegex = regexp.MustCompile("file\\s+(.*)")
 
-func (title HocrTitle) GetFile() string {
+func (title HOCRTitle) GetFile() string {
 	m := fileRegex.FindStringSubmatch(title.Title)
 	if m != nil {
 		return m[1]
@@ -87,7 +87,7 @@ func (title HocrTitle) GetFile() string {
 	}
 }
 
-func (title *HocrTitle) SetFile(file string) {
+func (title *HOCRTitle) SetFile(file string) {
 	if len(title.Title) > 0 {
 		title.Title = fmt.Sprintf("%s; file %s", title.Title, file)
 	} else {
@@ -97,7 +97,7 @@ func (title *HocrTitle) SetFile(file string) {
 
 var bboxRegex = regexp.MustCompile("bbox\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)")
 
-func (title HocrTitle) GetBbox() Bbox {
+func (title HOCRTitle) GetBbox() Bbox {
 	var bbox = Bbox{-1, -1, -1, -1}
 	m := bboxRegex.FindStringSubmatch(title.Title)
 	if m != nil {
@@ -109,7 +109,7 @@ func (title HocrTitle) GetBbox() Bbox {
 	return bbox
 }
 
-func (title *HocrTitle) SetBbox(bbox Bbox) {
+func (title *HOCRTitle) SetBbox(bbox Bbox) {
 	if len(title.Title) > 0 {
 		title.Title = fmt.Sprintf("%s; %v", title.Title, bbox)
 	} else {
@@ -117,12 +117,12 @@ func (title *HocrTitle) SetBbox(bbox Bbox) {
 	}
 }
 
-func ReadHocr(file string) (*Hocr, error) {
+func ReadHOCR(file string) (*HOCR, error) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
-	hocr := Hocr{File: file}
+	hocr := HOCR{File: file}
 	err = xml.Unmarshal(data, &hocr)
 	if err != nil {
 		return nil, err
@@ -130,8 +130,8 @@ func ReadHocr(file string) (*Hocr, error) {
 	return &hocr, nil
 }
 
-func MustReadHocr(file string) *Hocr {
-	hocr, err := ReadHocr(file)
+func MustReadHOCR(file string) *HOCR {
+	hocr, err := ReadHOCR(file)
 	if err != nil {
 		panic(err)
 	}

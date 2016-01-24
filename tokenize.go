@@ -10,7 +10,7 @@ import (
 	"unicode"
 )
 
-func sanitize(hocr *Hocr) error {
+func sanitize(hocr *HOCR) error {
 	pageBbox, err := hocr.ReadImageFileBbox()
 	if err != nil {
 		return err
@@ -29,7 +29,7 @@ func sanitize(hocr *Hocr) error {
 	return nil
 }
 
-func appendCapability(metas []HocrMeta) {
+func appendCapability(metas []HOCRMeta) {
 	for i := range metas {
 		if metas[i].Name == "ocr-capabilities" {
 			metas[i].Content = strings.Join(
@@ -88,7 +88,7 @@ type char struct {
 	bbox Bbox
 }
 
-func makeChar(span HocrSpan, lloc Lloc) char {
+func makeChar(span HOCRSpan, lloc Lloc) char {
 	spanBbox := span.GetBbox()
 	return char{
 		lloc.Codepoint,
@@ -128,7 +128,7 @@ func combineBbox(chars []char, i, n int) Bbox {
 	return bbox
 }
 
-func tokenizeSpan(llocs []Lloc, span *HocrSpan) {
+func tokenizeSpan(llocs []Lloc, span *HOCRSpan) {
 	chars := make([]char, 0, len(llocs)+1)
 	for i := range llocs {
 		chars = append(chars, makeChar(*span, llocs[i]))
@@ -142,7 +142,7 @@ func tokenizeSpan(llocs []Lloc, span *HocrSpan) {
 	n := 0
 	for i := range chars {
 		if unicode.IsSpace(chars[i].r) && n > 0 {
-			var tspan HocrSpan
+			var tspan HOCRSpan
 			tspan.Class = "ocrx_word"
 			tspan.SetBbox(combineBbox(chars, i-n, n))
 			tspan.Data = buffer.String()
@@ -158,14 +158,14 @@ func tokenizeSpan(llocs []Lloc, span *HocrSpan) {
 	span.Data = ""
 }
 
-func tokenize(hocr *Hocr, dir string) error {
+func tokenize(hocr *HOCR, dir string) error {
 	llocs, err := readLlocs(dir)
 	if err != nil {
 		return err
 	}
 	if len(llocs) != len(hocr.Body.Div.Spans) {
 		return fmt.Errorf(
-			"Number of lines in Hocr (%v) differ from number of llocs (%v) in `%v`",
+			"Number of lines in HOCR (%v) differ from number of llocs (%v) in `%v`",
 			len(hocr.Body.Div.Spans),
 			len(llocs),
 			dir,
@@ -178,7 +178,7 @@ func tokenize(hocr *Hocr, dir string) error {
 	return nil
 }
 
-func (hocr *Hocr) ConvertToHocr(dir string) error {
+func (hocr *HOCR) ConvertToHOCR(dir string) error {
 	err := sanitize(hocr)
 	if err == nil {
 		return tokenize(hocr, dir)
@@ -187,8 +187,8 @@ func (hocr *Hocr) ConvertToHocr(dir string) error {
 	}
 }
 
-func (hocr *Hocr) MustConvertToHocr(dir string) {
-	if err := hocr.ConvertToHocr(dir); err != nil {
+func (hocr *HOCR) MustConvertToHOCR(dir string) {
+	if err := hocr.ConvertToHOCR(dir); err != nil {
 		panic(err)
 	}
 }

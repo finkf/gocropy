@@ -21,8 +21,6 @@ type HocrClass struct {
 }
 
 type HocrSpan struct {
-	//Class string `xml:"class,attr"`
-	//Title string     `xml:"title,attr"`
 	HocrClass
 	HocrTitle
 	Data  string     `xml:",chardata"`
@@ -30,8 +28,6 @@ type HocrSpan struct {
 }
 
 type HocrDiv struct {
-	//Class string `xml:"class,attr"`
-	//Title string     `xml:"title,attr"`
 	HocrClass
 	HocrTitle
 	Spans []HocrSpan `xml:"span"`
@@ -45,7 +41,6 @@ type HocrMeta struct {
 	HttpEquiv string `xml:"http-equiv,attr,omitempty"`
 	Name      string `xml:"name,attr,omitempty"`
 	Content   string `xml:"content,attr"`
-	//Attrs []xml.Attr `xml:",attr"`
 }
 
 type HocrHead struct {
@@ -57,6 +52,7 @@ type Hocr struct {
 	XMLName xml.Name
 	Head    HocrHead `xml:"head"`
 	Body    HocrBody `xml:"body"`
+	Path    string
 }
 
 func (div *HocrDiv) MustReadImageFileBbox() Bbox {
@@ -122,7 +118,7 @@ func ReadHocr(file string) (*Hocr, error) {
 	if err != nil {
 		return nil, err
 	}
-	var hocr Hocr
+	hocr := Hocr{Path: file}
 	err = xml.Unmarshal(data, &hocr)
 	if err != nil {
 		return nil, err

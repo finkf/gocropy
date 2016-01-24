@@ -10,12 +10,14 @@ import (
 	"unicode"
 )
 
-func sanitize(hocr *Hocr) {
-	hocr.Body.Div.MustReadImageFileBbox()
-	pageBbox := hocr.Body.Div.GetBbox()
+func sanitize(hocr *Hocr) error {
+	pageBbox, err := hocr.ReadImageFileBbox()
+	if err != nil {
+		return err
+	}
 	for i := range hocr.Body.Div.Spans {
 		bbox := hocr.Body.Div.Spans[i].GetBbox()
-		bbox.Sanitize(pageBbox)
+		bbox.Sanitize(*pageBbox)
 		hocr.Body.Div.Spans[i].Title = fmt.Sprintf("%v", bbox)
 		hocr.Body.Div.Spans[i].Data = strings.Replace(
 			hocr.Body.Div.Spans[i].Data, "\\&", "&", -1,
@@ -24,6 +26,7 @@ func sanitize(hocr *Hocr) {
 			hocr.Body.Div.Spans[i].Data, "\\<", "<", -1,
 		)
 	}
+	return nil
 }
 
 func appendCapability(metas []HocrMeta) {
@@ -176,8 +179,12 @@ func tokenize(hocr *Hocr, dir string) error {
 }
 
 func (hocr *Hocr) ConvertToHocr(dir string) error {
-	sanitize(hocr)
-	return tokenize(hocr, dir)
+	err := sanitize(hocr)
+	if err == nil {
+		return tokenize(hocr, dir)
+	} else {
+		return err
+	}
 }
 
 func (hocr *Hocr) MustConvertToHocr(dir string) {

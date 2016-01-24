@@ -8,6 +8,7 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"os"
+	"path"
 	"regexp"
 	"strconv"
 )
@@ -52,24 +53,27 @@ type Hocr struct {
 	XMLName xml.Name
 	Head    HocrHead `xml:"head"`
 	Body    HocrBody `xml:"body"`
-	Path    string
+	File    string
 }
 
-func (div *HocrDiv) MustReadImageFileBbox() Bbox {
-	in, err := os.Open(div.GetFile())
-	if err == nil {
-		defer in.Close()
-		im, _, err := image.DecodeConfig(in)
-		if err == nil {
-			if im.ColorModel == nil {
-				panic("Could not read image (missing decoder?)")
-			}
-			bbox := Bbox{0, 0, int64(im.Width), int64(im.Height)}
-			div.SetBbox(bbox)
-			return bbox
-		}
+func (hocr *Hocr) ReadImageFileBbox() (*Bbox, error) {
+	basedir, _ := path.Split(hocr.File)
+	file := hocr.Body.Div.GetFile()
+	in, err := os.Open(path.Join(basedir, file))
+	if err != nil {
+		return nil, err
 	}
-	panic(err)
+	defer in.Close()
+	img, _, err := image.DecodeConfig(in)
+	if err != nil {
+		return nil, err
+	}
+	if img.ColorModel == nil {
+		return nil, fmt.Errorf("Could not read image (missing decoder?)")
+	}
+	bbox := Bbox{0, 0, int64(img.Width), int64(img.Height)}
+	hocr.Body.Div.SetBbox(bbox)
+	return &bbox, nil
 }
 
 var fileRegex = regexp.MustCompile("file\\s+(.*)")
@@ -118,7 +122,7 @@ func ReadHocr(file string) (*Hocr, error) {
 	if err != nil {
 		return nil, err
 	}
-	hocr := Hocr{Path: file}
+	hocr := Hocr{File: file}
 	err = xml.Unmarshal(data, &hocr)
 	if err != nil {
 		return nil, err

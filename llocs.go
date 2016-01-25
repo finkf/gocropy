@@ -4,8 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strconv"
-	"unicode"
+	"strings"
 )
 
 type Lloc struct {
@@ -14,22 +13,33 @@ type Lloc struct {
 }
 
 func (lloc Lloc) String() string {
-	return fmt.Sprintf("%c %e", lloc.Codepoint, lloc.Adjustment)
+	return fmt.Sprintf("%c\t%f", lloc.Codepoint, lloc.Adjustment)
 }
 
+// This implementation is weird. There seems to be some bug with skipping
+// whitespace and the fmt.ScanState
 func (lloc *Lloc) Scan(state fmt.ScanState, verb rune) error {
-	r, _, err := state.ReadRune()
-	if err != nil {
-		return err
-	}
-	token, err := state.Token(true, func(r rune) bool {
-		return unicode.IsDigit(r) || r == '.' || r == '+' || r == '-'
+	token, err := state.Token(false, func(r rune) bool {
+		return r != '\n'
 	})
 	if err != nil {
 		return err
 	}
-	lloc.Codepoint = r
-	lloc.Adjustment, err = strconv.ParseFloat(string(token), 64)
+	if strings.ContainsRune(string(token), '\t') {
+		_, err = fmt.Sscanf(
+			string(token),
+			"%c\t%f",
+			&lloc.Codepoint,
+			&lloc.Adjustment,
+		)
+	} else {
+		lloc.Codepoint = ' '
+		_, err = fmt.Sscanf(
+			string(token),
+			"%f",
+			&lloc.Adjustment,
+		)
+	}
 	return err
 }
 

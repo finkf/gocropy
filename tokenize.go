@@ -180,11 +180,10 @@ func tokenize(hocr *HOCR, dir string) error {
 
 func (hocr *HOCR) ConvertToHOCR(dir string) error {
 	err := sanitize(hocr)
-	if err == nil {
-		return tokenize(hocr, dir)
-	} else {
+	if err != nil {
 		return err
 	}
+	return tokenize(hocr, dir)
 }
 
 func (hocr *HOCR) MustConvertToHOCR(dir string) {

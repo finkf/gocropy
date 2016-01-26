@@ -53,7 +53,7 @@ type HOCR struct {
 	XMLName xml.Name
 	Head    HOCRHead `xml:"head"`
 	Body    HOCRBody `xml:"body"`
-	File    string
+	File    string   `xml:"-"`
 }
 
 func (hocr *HOCR) ReadImageFileBbox() (*Bbox, error) {

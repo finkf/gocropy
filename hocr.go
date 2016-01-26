@@ -10,7 +10,7 @@ import (
 	"os"
 	"path"
 	"regexp"
-	"strconv"
+	//	"strconv"
 )
 
 type HOCRTitle struct {
@@ -71,7 +71,7 @@ func (hocr *HOCR) ReadImageFileBbox() (*Bbox, error) {
 	if img.ColorModel == nil {
 		return nil, fmt.Errorf("Could not read image (missing decoder?)")
 	}
-	bbox := Bbox{0, 0, int64(img.Width), int64(img.Height)}
+	bbox := Bbox{0, 0, img.Width, img.Height}
 	hocr.Body.Div.SetBbox(bbox)
 	return &bbox, nil
 }
@@ -95,25 +95,22 @@ func (title *HOCRTitle) SetFile(file string) {
 	}
 }
 
-var bboxRegex = regexp.MustCompile("bbox\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)")
+var bboxRegex = regexp.MustCompile("bbox\\s+(\\d+\\s+\\d+\\s+\\d+\\s+\\d+)")
 
 func (title HOCRTitle) GetBbox() Bbox {
-	var bbox = Bbox{-1, -1, -1, -1}
+	var bbox Bbox
 	m := bboxRegex.FindStringSubmatch(title.Title)
 	if m != nil {
-		bbox.Left, _ = strconv.ParseInt(m[1], 0, 64)
-		bbox.Top, _ = strconv.ParseInt(m[2], 0, 64)
-		bbox.Right, _ = strconv.ParseInt(m[3], 0, 64)
-		bbox.Bottom, _ = strconv.ParseInt(m[4], 0, 64)
+		fmt.Sscanf(m[1], "%v", &bbox)
 	}
 	return bbox
 }
 
 func (title *HOCRTitle) SetBbox(bbox Bbox) {
 	if len(title.Title) > 0 {
-		title.Title = fmt.Sprintf("%s; %v", title.Title, bbox)
+		title.Title = fmt.Sprintf("%s; bbox %v", title.Title, bbox)
 	} else {
-		title.Title = fmt.Sprintf("%v", bbox)
+		title.Title = fmt.Sprintf("bbox %v", bbox)
 	}
 }
 

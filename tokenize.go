@@ -93,7 +93,7 @@ func makeChar(span HOCRSpan, lloc Lloc) char {
 	return char{
 		lloc.Codepoint,
 		Bbox{
-			spanBbox.Left + int64(lloc.Adjustment),
+			spanBbox.Left + int(lloc.Adjustment),
 			spanBbox.Top,
 			0,
 			spanBbox.Bottom,
@@ -101,53 +101,44 @@ func makeChar(span HOCRSpan, lloc Lloc) char {
 	}
 }
 
-func min(a, b int64) int64 {
-	if a < b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func max(a, b int64) int64 {
-	if a > b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func combineBbox(chars []char, i, n int) Bbox {
-	bbox := chars[i].bbox
-	for i := i + 1; i < n; i++ {
-		bbox.Left = min(bbox.Left, chars[i].bbox.Left)
-		bbox.Top = min(bbox.Top, chars[i].bbox.Top)
-		bbox.Right = max(bbox.Right, chars[i].bbox.Right)
-		bbox.Bottom = max(bbox.Bottom, chars[i].bbox.Bottom)
-	}
-	return bbox
-}
-
-func tokenizeSpan(llocs []Lloc, span *HOCRSpan) {
+func makeChars(llocs []Lloc, span HOCRSpan) []char {
 	chars := make([]char, 0, len(llocs)+1)
 	for i := range llocs {
-		chars = append(chars, makeChar(*span, llocs[i]))
+		chars = append(chars, makeChar(span, llocs[i]))
 		if i > 0 {
 			chars[i-1].bbox.Right = chars[i].bbox.Left - 1
 		}
 	}
 	// append one trailing whitespace in order to add the last token
 	chars = append(chars, char{' ', Bbox{0, 0, 0, 0}})
+	return chars
+}
+
+func combineBboxes(chars []char) Bbox {
+	var bbox Bbox
+	if len(chars) > 0 {
+		bbox = chars[0].bbox
+		for _, c := range chars[1:] {
+			bbox.Add(c.bbox)
+		}
+	}
+	return bbox
+}
+
+func tokenizeSpan(llocs []Lloc, span *HOCRSpan) {
+	chars := makeChars(llocs, *span)
 	var buffer, cuts bytes.Buffer
 	n := 0
-	var prevBbox *Bbox = nil;
+	var prevBbox *Bbox = nil
 	for i := range chars {
 		if unicode.IsSpace(chars[i].r) && n > 0 {
 			var tspan HOCRSpan
 			tspan.Class = "ocrx_word"
-			tspan.SetBbox(combineBbox(chars, i-n, n))
+			tspan.SetBbox(combineBboxes(chars[(i - n):i]))
 			tspan.Data = buffer.String()
-			tspan.Title = fmt.Sprintf("%s; cuts%s", tspan.Title, cuts.String())
+			if cuts.Len() > 0 {
+				tspan.Title = fmt.Sprintf("%s; cuts%s", tspan.Title, cuts.String())
+			}
 			buffer.Reset()
 			cuts.Reset()
 			n = 0

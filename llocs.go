@@ -16,8 +16,8 @@ func (lloc Lloc) String() string {
 	return fmt.Sprintf("%c\t%f", lloc.Codepoint, lloc.Adjustment)
 }
 
-// This implementation is weird. There seems to be some bug with skipping
-// whitespace and the fmt.ScanState
+// This implementation is weird. fmt.ScanState seems to skip leading
+// whitespace on a line.
 func (lloc *Lloc) Scan(state fmt.ScanState, verb rune) error {
 	token, err := state.Token(false, func(r rune) bool {
 		return r != '\n'
@@ -25,6 +25,7 @@ func (lloc *Lloc) Scan(state fmt.ScanState, verb rune) error {
 	if err != nil {
 		return err
 	}
+	//fmt.Printf("token: `%v`\n", token)
 	if strings.ContainsRune(string(token), '\t') {
 		_, err = fmt.Sscanf(
 			string(token),

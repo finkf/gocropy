@@ -138,18 +138,26 @@ func tokenizeSpan(llocs []Lloc, span *HOCRSpan) {
 	}
 	// append one trailing whitespace in order to add the last token
 	chars = append(chars, char{' ', Bbox{0, 0, 0, 0}})
-	var buffer bytes.Buffer
+	var buffer, cuts bytes.Buffer
 	n := 0
+	var prevBbox *Bbox = nil;
 	for i := range chars {
 		if unicode.IsSpace(chars[i].r) && n > 0 {
 			var tspan HOCRSpan
 			tspan.Class = "ocrx_word"
 			tspan.SetBbox(combineBbox(chars, i-n, n))
 			tspan.Data = buffer.String()
+			tspan.Title = fmt.Sprintf("%s; cuts%s", tspan.Title, cuts.String())
 			buffer.Reset()
+			cuts.Reset()
 			n = 0
 			span.Token = append(span.Token, tspan)
 		} else if !unicode.IsSpace(chars[i].r) {
+			if prevBbox != nil {
+				delta := chars[i].bbox.Left - prevBbox.Left
+				cuts.WriteString(fmt.Sprintf(" %d", delta))
+			}
+			prevBbox = &chars[i].bbox
 			buffer.WriteRune(chars[i].r)
 			n++
 		}

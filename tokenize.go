@@ -1,7 +1,6 @@
 package gocropy
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path"
@@ -83,73 +82,22 @@ func readLlocs(dirname string) ([][]Lloc, error) {
 	return llocs, nil
 }
 
-type char struct {
-	r    rune
-	bbox Bbox
-}
-
-func makeChar(span HOCRSpan, lloc Lloc) char {
-	spanBbox := span.GetBbox()
-	return char{
-		lloc.Codepoint,
-		Bbox{
-			spanBbox.Left + int(lloc.Adjustment),
-			spanBbox.Top,
-			0,
-			spanBbox.Bottom,
-		},
-	}
-}
-
-func makeChars(llocs []Lloc, span HOCRSpan) []char {
-	chars := make([]char, 0, len(llocs)+1)
-	for i := range llocs {
-		chars = append(chars, makeChar(span, llocs[i]))
-		if i > 0 {
-			chars[i-1].bbox.Right = chars[i].bbox.Left - 1
-		}
-	}
-	// append one trailing whitespace in order to add the last token
-	chars = append(chars, char{' ', Bbox{0, 0, 0, 0}})
-	return chars
-}
-
-func combineBboxes(chars []char) Bbox {
-	var bbox Bbox
-	if len(chars) > 0 {
-		bbox = chars[0].bbox
-		for _, c := range chars[1:] {
-			bbox.Add(c.bbox)
-		}
-	}
-	return bbox
-}
-
 func tokenizeSpan(llocs []Lloc, span *HOCRSpan) {
-	chars := makeChars(llocs, *span)
-	var buffer, cuts bytes.Buffer
+	chars := CharsFromLlocs(llocs, span.GetBbox())
+	// append one trailing whitespace in order to add the last token
+	chars = append(chars, Char{Bbox{0, 0, 0, 0}, ' '})
+
 	n := 0
-	var prevBbox *Bbox = nil
 	for i := range chars {
-		if unicode.IsSpace(chars[i].r) && n > 0 {
-			var tspan HOCRSpan
+		if unicode.IsSpace(chars[i].Rune) && n > 0 {
+			token := chars[(i - n):i]
+			str, bbox := TokenizeChars(token)
+			tspan := HOCRSpan{Data: str}
 			tspan.Class = "ocrx_word"
-			tspan.SetBbox(combineBboxes(chars[(i - n):i]))
-			tspan.Data = buffer.String()
-			if cuts.Len() > 0 {
-				tspan.Title = fmt.Sprintf("%s; cuts%s", tspan.Title, cuts.String())
-			}
-			buffer.Reset()
-			cuts.Reset()
-			n = 0
+			tspan.SetBbox(bbox)
+			tspan.SetCuts(token)
 			span.Token = append(span.Token, tspan)
-		} else if !unicode.IsSpace(chars[i].r) {
-			if prevBbox != nil {
-				delta := chars[i].bbox.Left - prevBbox.Left
-				cuts.WriteString(fmt.Sprintf(" %d", delta))
-			}
-			prevBbox = &chars[i].bbox
-			buffer.WriteRune(chars[i].r)
+		} else if !unicode.IsSpace(chars[i].Rune) {
 			n++
 		}
 	}

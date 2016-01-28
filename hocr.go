@@ -95,6 +95,21 @@ func (title *HOCRTitle) SetFile(file string) {
 	}
 }
 
+func (title *HOCRTitle) SetCuts(chars []Char) {
+	var buffer bytes.Buffer
+	for i := 1; i < len(chars); i++ {
+		delta := chars[i].Box.Left - chars[i-1].Box.Left
+		buffer.WriteString(fmt.Sprintf(" %d", delta))
+	}
+	if len(title.Title) > 0 {
+		title.Title = fmt.Sprintf("%s; file %s", title.Title, buffer.String())
+	} else {
+		title.Title = fmt.Sprintf("file %s", file)
+	}
+}
+
+func (title *HOCRT
+
 var bboxRegex = regexp.MustCompile("bbox\\s+(\\d+\\s+\\d+\\s+\\d+\\s+\\d+)")
 
 func (title HOCRTitle) GetBbox() Bbox {

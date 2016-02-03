@@ -81,8 +81,8 @@ func scanInt(state fmt.ScanState) (int, error) {
 		return unicode.IsDigit(r)
 	})
 	if err != nil {
-		res, err := strconv.ParseInt(string(token), 0, 64)
-		return int(res), err
+		return 0, err
 	}
-	return 0, err
+	res, err := strconv.ParseInt(string(token), 0, 64)
+	return int(res), err
 }

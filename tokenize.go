@@ -17,7 +17,7 @@ func sanitize(hocr *HOCR) error {
 	for i := range hocr.Body.Div.Spans {
 		bbox := hocr.Body.Div.Spans[i].GetBbox()
 		bbox.Sanitize(*pageBbox)
-		hocr.Body.Div.Spans[i].Title = fmt.Sprintf("%v", bbox)
+		hocr.Body.Div.Spans[i].Title = fmt.Sprintf("bbox %v", bbox)
 		hocr.Body.Div.Spans[i].Data = strings.Replace(
 			hocr.Body.Div.Spans[i].Data, "\\&", "&", -1,
 		)
@@ -91,12 +91,16 @@ func tokenizeSpan(llocs []Lloc, span *HOCRSpan) {
 	for i := range chars {
 		if unicode.IsSpace(chars[i].Rune) && n > 0 {
 			token := chars[(i - n):i]
+			for _, c := range token {
+				fmt.Printf("char: %s (%s)\n", c.String(), span.GetBbox().String())
+			}
 			str, bbox := TokenizeChars(token)
 			tspan := HOCRSpan{Data: str}
 			tspan.Class = "ocrx_word"
 			tspan.SetBbox(bbox)
 			tspan.SetCuts(token)
 			span.Token = append(span.Token, tspan)
+			n = 0
 		} else if !unicode.IsSpace(chars[i].Rune) {
 			n++
 		}

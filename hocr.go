@@ -1,6 +1,7 @@
 package gocropy
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"image"
@@ -102,13 +103,11 @@ func (title *HOCRTitle) SetCuts(chars []Char) {
 		buffer.WriteString(fmt.Sprintf(" %d", delta))
 	}
 	if len(title.Title) > 0 {
-		title.Title = fmt.Sprintf("%s; file %s", title.Title, buffer.String())
+		title.Title = fmt.Sprintf("%s; cuts%s", title.Title, buffer.String())
 	} else {
-		title.Title = fmt.Sprintf("file %s", file)
+		title.Title = fmt.Sprintf("cuts%s", buffer.String())
 	}
 }
-
-func (title *HOCRT
 
 var bboxRegex = regexp.MustCompile("bbox\\s+(\\d+\\s+\\d+\\s+\\d+\\s+\\d+)")
 

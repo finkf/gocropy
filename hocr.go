@@ -1,6 +1,7 @@
 package gocropy
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"image"
@@ -92,6 +93,19 @@ func (title *HOCRTitle) SetFile(file string) {
 		title.Title = fmt.Sprintf("%s; file %s", title.Title, file)
 	} else {
 		title.Title = fmt.Sprintf("file %s", file)
+	}
+}
+
+func (title *HOCRTitle) SetCuts(chars []Char) {
+	var buffer bytes.Buffer
+	for i := 1; i < len(chars); i++ {
+		delta := chars[i].Box.Left - chars[i-1].Box.Left
+		buffer.WriteString(fmt.Sprintf(" %d", delta))
+	}
+	if len(title.Title) > 0 {
+		title.Title = fmt.Sprintf("%s; cuts%s", title.Title, buffer.String())
+	} else {
+		title.Title = fmt.Sprintf("cuts%s", buffer.String())
 	}
 }
 

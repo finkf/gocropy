@@ -91,9 +91,6 @@ func tokenizeSpan(llocs []Lloc, span *HOCRSpan) {
 	for i := range chars {
 		if unicode.IsSpace(chars[i].Rune) && n > 0 {
 			token := chars[(i - n):i]
-			for _, c := range token {
-				fmt.Printf("char: %s (%s)\n", c.String(), span.GetBbox().String())
-			}
 			str, bbox := TokenizeChars(token)
 			tspan := HOCRSpan{Data: str}
 			tspan.Class = "ocrx_word"

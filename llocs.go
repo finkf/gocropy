@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
+	"regexp"
+	//	"strings"
+	//	"unicode/utf8"
 )
 
 type Lloc struct {
@@ -16,32 +18,29 @@ func (lloc Lloc) String() string {
 	return fmt.Sprintf("%c\t%f", lloc.Codepoint, lloc.Adjustment)
 }
 
-// This implementation is weird. fmt.ScanState seems to skip leading
-// whitespace on a line.
-func (lloc *Lloc) Scan(state fmt.ScanState, verb rune) error {
-	token, err := state.Token(false, func(r rune) bool {
-		return r != '\n'
-	})
-	if err != nil {
-		return err
+var splitRe = regexp.MustCompile("\\s+")
+
+func isOkLlocLine(splits []string) bool {
+	return len(splits) == 2 && len(splits[1]) > 0
+}
+
+func llocFromString(line string) (Lloc, error) {
+	var lloc Lloc
+	splits := splitRe.Split(line, 2)
+
+	if !isOkLlocLine(splits) {
+		return lloc, fmt.Errorf("invalid llocs line `%s`", line)
 	}
-	//fmt.Printf("token: `%v`\n", token)
-	if strings.ContainsRune(string(token), '\t') {
-		_, err = fmt.Sscanf(
-			string(token),
-			"%c\t%f",
-			&lloc.Codepoint,
-			&lloc.Adjustment,
-		)
-	} else {
+	if len(splits[0]) == 0 {
 		lloc.Codepoint = ' '
-		_, err = fmt.Sscanf(
-			string(token),
-			"%f",
-			&lloc.Adjustment,
-		)
+	} else {
+		_, err := fmt.Sscanf(splits[0], "%c", &lloc.Codepoint)
+		if err != nil {
+			return lloc, err
+		}
 	}
-	return err
+	_, err := fmt.Sscanf(splits[1], "%f", &lloc.Adjustment)
+	return lloc, err
 }
 
 func ReadLlocs(file string) ([]Lloc, error) {
@@ -53,8 +52,7 @@ func ReadLlocs(file string) ([]Lloc, error) {
 	var llocs []Lloc
 	scanner := bufio.NewScanner(in)
 	for scanner.Scan() {
-		var lloc Lloc
-		_, err := fmt.Sscanf(scanner.Text(), "%v", &lloc)
+		lloc, err := llocFromString(scanner.Text())
 		if err != nil {
 			return nil, err
 		}
